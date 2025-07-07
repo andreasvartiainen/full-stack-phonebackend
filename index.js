@@ -49,8 +49,7 @@ app.get('/api/persons/:id', (request, response) => {
 	if (person)
 		response.json(person);
 	else
-		response.statusMessage = `Person with id ${id} not found`
-		response.status(404).send();
+		response.status(404).json({error: `person with id ${id} not found`});
 })
 
 app.delete('/api/persons/:id', (request, response) => {
