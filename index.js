@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 
-const data = [
+let persons = [
     { 
       "id": "1",
       "name": "Arto Hellas", 
@@ -32,7 +32,7 @@ app.get('/', (request, response) => {
 app.get('/info', (request, response) => {
 	const date = new Date(Date.now()).toString()
 	const page = `
-		<div>Phonebook has info for ${data.length} people</div>
+		<div>Phonebook has info for ${persons.length} people</div>
 		<div>${date}</div>
 	`
 	response.send(page);
@@ -40,17 +40,50 @@ app.get('/info', (request, response) => {
 
 app.get('/api/persons', (request, response) => {
 	console.log(request);
-	response.json(data);
+	response.json(persons);
 })
 
 app.get('/api/persons/:id', (request, response) => {
 	const id = request.params.id;
-	const person = data.find((d) => d.id === id)
+	const person = persons.find((d) => d.id === id)
 	if (person)
 		response.json(person);
 	else
 		response.statusMessage = `Person with id ${id} not found`
 		response.status(404).send();
+})
+
+app.delete('/api/persons/:id', (request, response) => {
+	const id = request.params.id;
+	persons = persons.filter((d) => d.id !== id);
+
+	response.status(204).send();
+})
+
+const generateId = () => {
+	return Math.round(Math.random() * 100000);
+}
+
+app.post('/api/persons', (request, response) => {
+	const data = request.body
+
+	if (persons.find((p) => p.name === data.name)){
+		response.status(400).json({error: 'name must be unique'});
+	}
+
+	if (data.name && data.number) {
+		const newPerson = {
+			id: generateId().toString(),
+			name: data.name,
+			number: data.number,
+		}
+
+		persons = [...persons, newPerson];
+		response.status(201).end();
+	} else {
+		const fields = Object.keys(persons[0]).filter((k) => k !== "id");
+		response.status(400).json({error: `missing data: {${fields}} expected`});
+	}
 })
 
 const PORT = 3001;
