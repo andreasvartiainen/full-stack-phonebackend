@@ -97,6 +97,7 @@ app.post('/api/persons', (request, response) => {
 		persons = [...persons, newPerson];
 		response.status(201).end();
 	} else {
+		// get all needed fields from person object and ignore id
 		const fields = Object.keys(persons[0]).filter((k) => k !== "id");
 		response.status(400).json({error: `missing data: {${fields}} expected`});
 	}
