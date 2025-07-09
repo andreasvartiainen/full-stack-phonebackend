@@ -43,7 +43,7 @@ app.delete('/api/persons/:id', (request, response, next) => {
 	const id = request.params.id;
 
 	Person.findByIdAndDelete(id).then(result => {
-		return response.status(204).json(result);
+		return response.status(204).end();
 	})
 	.catch(error => next(error)) ;
 })
