@@ -26,19 +26,6 @@ const morganConfig = (tokens, req, res) => {
 
 app.use(morgan(morganConfig));
 
-app.get('/', (request, response) => {
-	response.send('<h1>Hello</h1>');
-})
-
-// app.get('/info', (request, response) => {
-// 	const date = new Date(Date.now()).toString()
-// 	const page = `
-// 		<div>Phonebook has info for ${persons.length} people</div>
-// 		<div>${date}</div>
-// 	`
-// 	response.send(page);
-// })
-
 app.get('/api/persons', (request, response) => {
 	Person.find({}).then((persons) => response.json(persons))
 })
@@ -54,36 +41,26 @@ app.get('/api/persons/:id', (request, response) => {
 
 app.delete('/api/persons/:id', (request, response) => {
 	const id = request.params.id;
-	persons = persons.filter((d) => d.id !== id);
+
+	Person.findByIdAndDelete(id);
 
 	response.status(204).send();
 })
 
-const generateId = () => {
-	return Math.round(Math.random() * 100000);
-}
-
 app.post('/api/persons', (request, response) => {
 	const data = request.body
 
-	if (persons.find((p) => p.name === data.name)){
-		response.status(400).json({error: 'name must be unique'});
-	}
+	if (!data.name && !data.number) 
+		return response.status(400).json({error: 'missing data fields'});
 
-	if (data.name && data.number) {
-		const newPerson = {
-			id: generateId().toString(),
-			name: data.name,
-			number: data.number,
-		}
+	const person = new Person({
+		name: data.name,
+		number: data.number,
+	})
 
-		persons = [...persons, newPerson];
-		response.status(201).json(newPerson);
-	} else {
-		// get all needed fields from person object and ignore id
-		const fields = Object.keys(persons[0]).filter((k) => k !== "id");
-		response.status(400).json({error: `missing data: {${fields}} expected`});
-	}
+	person.save()
+		.then((person) => response.status(201).json(person))
+		.catch((error) => response.status(400).json({error: error.message}));
 })
 
 const PORT = process.env.PORT || 3001;
