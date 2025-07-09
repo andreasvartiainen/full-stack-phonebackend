@@ -78,7 +78,7 @@ app.put('/api/persons/:id', (request, response,  next) => {
 	.catch(error => next(error));
 })
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
 	const data = request.body
 
 	if (!data.name || !data.number) 
@@ -101,8 +101,15 @@ const unknownEnpoint = (request, response) => {
 // error handler middleware
 // has to be added last
 const errorHandler = (error, request, response, next) => {
-	if (error.name === 'CastError') {
-		return response.status(400).send({error: 'malformed id'});
+	switch (error.name) {
+		case 'CastError':
+			{
+			return response.status(400).send({error: 'malformed id'});
+			}
+		case 'ValidationError':
+			{
+			return response.status(400).json({error: error.message});
+			}
 	}
 
 	next(error);
