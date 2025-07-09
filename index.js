@@ -39,12 +39,13 @@ app.get('/api/persons/:id', (request, response) => {
 		response.status(404).json({error: `person with id ${id} not found`});
 })
 
-app.delete('/api/persons/:id', (request, response) => {
+app.delete('/api/persons/:id', (request, response, next) => {
 	const id = request.params.id;
 
-	Person.findByIdAndDelete(id);
-
-	response.status(204).send();
+	Person.findByIdAndDelete(id).then(result => {
+		return response.status(204).json(result);
+	})
+	.catch(error => next(error)) ;
 })
 
 app.post('/api/persons', (request, response) => {
@@ -62,6 +63,18 @@ app.post('/api/persons', (request, response) => {
 		.then((person) => response.status(201).json(person))
 		.catch((error) => response.status(400).json({error: error.message}));
 })
+
+// error handler middleware
+// has to be added last
+const errorHandler = (error, request, response, next) => {
+	if (error.name === 'CastError') {
+		return response.status(400).send({error: 'malformed id'});
+	}
+
+	next(error);
+}
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT,() => {
