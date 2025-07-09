@@ -26,17 +26,26 @@ const morganConfig = (tokens, req, res) => {
 
 app.use(morgan(morganConfig));
 
+app.get('/info', (request, response, next) => {
+	Person.find({}).then(persons => {
+		return response.send(`<div>Phonebook has ${persons.length} entries</div>`);
+	})
+	.catch(error => next(error));
+})
+
 app.get('/api/persons', (request, response) => {
 	Person.find({}).then((persons) => response.json(persons))
 })
 
-app.get('/api/persons/:id', (request, response) => {
+app.get('/api/persons/:id', (request, response, next) => {
 	const id = request.params.id;
-	const person = persons.find((d) => d.id === id)
-	if (person)
-		response.json(person);
-	else
-		response.status(404).json({error: `person with id ${id} not found`});
+
+	Person.findById(id).then(note => {
+		return response.json(note);
+	})
+	.catch(error => {
+		return next(error);
+	});
 })
 
 app.delete('/api/persons/:id', (request, response, next) => {
@@ -48,11 +57,32 @@ app.delete('/api/persons/:id', (request, response, next) => {
 	.catch(error => next(error)) ;
 })
 
+app.put('/api/persons/:id', (request, response,  next) => {
+	const id = request.params.id;
+	const {name, number} = request.body;
+
+	Person.findById(id).then( note => {
+		if (!note) {
+			return response.status(404).end()
+		}
+
+		note.name = name;
+		note.number = number;
+
+		note.save().then(updatedPerson => 
+		{
+			response.json(updatedPerson);
+		})
+		.catch(error => next(error));
+	})
+	.catch(error => next(error));
+})
+
 app.post('/api/persons', (request, response) => {
 	const data = request.body
 
-	if (!data.name && !data.number) 
-		return response.status(400).json({error: 'missing data fields'});
+	if (!data.name || !data.number) 
+		return response.status(400).end();
 
 	const person = new Person({
 		name: data.name,
@@ -61,8 +91,12 @@ app.post('/api/persons', (request, response) => {
 
 	person.save()
 		.then((person) => response.status(201).json(person))
-		.catch((error) => response.status(400).json({error: error.message}));
+		.catch(error => next(error));
 })
+
+const unknownEnpoint = (request, response) => {
+	response.status(404).send({error: 'unknown endpoint'});
+}
 
 // error handler middleware
 // has to be added last
@@ -74,6 +108,7 @@ const errorHandler = (error, request, response, next) => {
 	next(error);
 }
 
+app.use(unknownEnpoint);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
